@@ -1,0 +1,312 @@
+openapi: 3.0.0
+info:
+  title: Partners API
+  description: API for wholesale partners to synchronize product information and inventory levels with the NOP commerce platform
+  version: 1.0.0
+  contact:
+    name: API Support
+    url: https://connect.othoba.com
+  license:
+    name: Proprietary
+    url: https://connect.othoba.com/license
+
+servers:
+  - url: https://connect.othoba.com
+    description: Production Server
+  - url: http://localhost:5000
+    description: Development Server
+
+tags:
+  - name: Products
+    description: Product information synchronization
+  - name: Stock
+    description: Inventory level management
+
+paths:
+  /api/partners/update-product:
+    post:
+      summary: Update Product Information
+      description: Synchronizes product metadata (name, pricing) with the catalog database
+      operationId: updateProduct
+      tags:
+        - Products
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        description: Product update request containing product details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdateRequest'
+            example:
+              product_id: "PROD-2024-001"
+              supplier: "EuroAsia Wholesale"
+              name: "Premium Cotton T-Shirt"
+              sku: "TSHIRT-COTTON-001"
+              mrp_price: 499.99
+              wholesale_price: 299.99
+      responses:
+        '200':
+          description: Product update was successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: "Product updated successfully"
+        '400':
+          description: Invalid request data or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                validationError:
+                  summary: Validation Error
+                  value:
+                    type: "https://connect.othoba.com/api/validation-error"
+                    title: "Validation Error"
+                    status: 400
+                    detail: "One or more validation errors occurred."
+                    instance: "/api/partners/update-product"
+                    response:
+                      success: false
+                      message: "One or more validation errors occurred."
+                      errors:
+                        Name: ["'Name' must not be empty."]
+                        MrpPrice: ["'Mrp Price' must be greater than '0'."]
+                operationError:
+                  summary: Operation Error
+                  value:
+                    type: "https://connect.othoba.com/api/operation-error"
+                    title: "Operation Error"
+                    status: 400
+                    detail: "Product Not found"
+                    instance: "/api/partners/update-product"
+                    response:
+                      success: false
+                      message: "Product Not found"
+        '401':
+          description: Unauthorized - Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              example:
+                type: "https://connect.othoba.com/api/server-error"
+                title: "Internal Server Error"
+                status: 500
+                detail: "An unexpected error occurred while processing the request"
+                instance: "/api/partners/update-product"
+                response:
+                  success: false
+                  message: "An unexpected error occurred while processing the request"
+
+  /api/partners/update-stock:
+    post:
+      summary: Update Stock Information
+      description: Synchronizes inventory levels and product availability status with the catalog database
+      operationId: updateStock
+      tags:
+        - Stock
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        description: Stock update request containing inventory details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockUpdateRequest'
+            example:
+              product_id: "PROD-2024-001"
+              sku: "TSHIRT-COTTON-001"
+              supplier: "EuroAsia Wholesale"
+              stock: 500
+      responses:
+        '200':
+          description: Stock update was successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: "Stock updated successfully"
+        '400':
+          description: Invalid request data or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              example:
+                type: "https://connect.othoba.com/api/validation-error"
+                title: "Validation Error"
+                status: 400
+                detail: "One or more validation errors occurred."
+                instance: "/api/partners/update-stock"
+                response:
+                  success: false
+                  message: "One or more validation errors occurred."
+                  errors:
+                    Quantity: ["'Quantity' must be greater than or equal to '0'."]
+        '401':
+          description: Unauthorized - Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: API Key authentication using format "API-Key {your-api-key}"
+
+  schemas:
+    ProductUpdateRequest:
+      type: object
+      required:
+        - product_id
+        - name
+        - mrp_price
+        - wholesale_price
+      properties:
+        product_id:
+          type: string
+          description: Unique identifier of the product
+          example: "PROD-2024-001"
+        supplier:
+          type: string
+          description: Supplier/partner name
+          example: "EuroAsia Wholesale"
+        name:
+          type: string
+          description: Product name/title
+          example: "Premium Cotton T-Shirt"
+        sku:
+          type: string
+          description: Stock Keeping Unit code
+          example: "TSHIRT-COTTON-001"
+        mrp_price:
+          type: number
+          format: decimal
+          description: Maximum Retail Price (must be > 0)
+          example: 499.99
+        wholesale_price:
+          type: number
+          format: decimal
+          description: Wholesale/cost price (must be >= 0)
+          example: 299.99
+
+    StockUpdateRequest:
+      type: object
+      required:
+        - product_id
+        - stock
+      properties:
+        product_id:
+          type: string
+          description: Unique identifier of the product
+          example: "PROD-2024-001"
+        sku:
+          type: string
+          description: Stock Keeping Unit code
+          example: "TSHIRT-COTTON-001"
+        supplier:
+          type: string
+          description: Supplier/partner name
+          example: "EuroAsia Wholesale"
+        stock:
+          type: integer
+          minimum: 0
+          description: Available stock quantity
+          example: 500
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Operation success indicator
+          example: true
+        message:
+          type: string
+          description: Response message
+          example: "Product updated successfully"
+        errors:
+          type: object
+          nullable: true
+          description: Validation errors (null for success responses)
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Operation success indicator
+          example: false
+        message:
+          type: string
+          description: Error message
+          example: "An error occurred during the operation"
+        errors:
+          type: object
+          nullable: true
+          description: Validation error details by field
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    ProblemDetails:
+      type: object
+      description: RFC 7807 Problem Details response format
+      properties:
+        type:
+          type: string
+          description: Problem type URI
+          example: "https://connect.othoba.com/api/validation-error"
+        title:
+          type: string
+          description: Problem title
+          example: "Validation Error"
+        status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        detail:
+          type: string
+          description: Detailed error message
+          example: "One or more validation errors occurred."
+        instance:
+          type: string
+          description: Request path that caused the error
+          example: "/api/partners/update-product"
+        response:
+          type: object
+          description: API response object
+          properties:
+            success:
+              type: boolean
+            message:
+              type: string
+            errors:
+              type: object
+              nullable: true
