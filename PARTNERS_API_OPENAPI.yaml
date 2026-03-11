@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Partners API
-  description: API for wholesale partners to synchronize product information and inventory levels with the NOP commerce platform
+  description: API for wholesale partners to synchronize product information and inventory levels with the Othoba platform
   version: 1.0.0
   contact:
     name: API Support
